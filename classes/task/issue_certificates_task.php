@@ -158,21 +158,29 @@ class issue_certificates_task extends \core\task\scheduled_task {
             $filteredusers = $infomodule->filter_user_list($userswithissueview);
 
             foreach ($filteredusers as $filtereduser) {
+
+                $user = $DB->get_record('user', ['id' => $filtereduser->id]);
+                $eventstr = "Certificate ID: " . $customcert->id . PHP_EOL;
+                $eventstr .= "User: " . $user->email . PHP_EOL;
+
                 // Check if the user has already been issued and emailed.
                 if (in_array($filtereduser->id, array_keys((array)$issuedusers))) {
                     continue;
                 }
+                $eventstr .= " - User has not been issued and emailed cert " . PHP_EOL;
 
                 // Don't want to issue to teachers.
                 if (in_array($filtereduser->id, array_keys((array)$userswithmanage))) {
                     continue;
                 }
+                $eventstr .= " - User does not have customcert:manage access " . PHP_EOL;
 
                 // Now check if the certificate is not visible to the current user.
                 $cm = get_fast_modinfo($customcert->courseid, $filtereduser->id)->instances['customcert'][$customcert->id];
                 if (!$cm->uservisible) {
                     continue;
                 }
+                $eventstr .= " - Activity is hidden for the student " . PHP_EOL;
 
                 // Check that they have passed the required time.
                 if (!empty($customcert->requiredtime)) {
@@ -181,6 +189,7 @@ class issue_certificates_task extends \core\task\scheduled_task {
                         continue;
                     }
                 }
+                $eventstr .= " - User is within the required time " . PHP_EOL;
 
                 // Ensure the cert hasn't already been issued, e.g via the UI (view.php) - a race condition.
                 $issue = $DB->get_record('customcert_issues',
@@ -192,6 +201,8 @@ class issue_certificates_task extends \core\task\scheduled_task {
 
                 // Validate issueid and one last check for emailed.
                 if (!empty($issueid) && empty($issue->emailed)) {
+                    $eventstr .= " Issuing Certificate " . PHP_EOL;
+                    self::create_event($eventstr);
                     // We create a new adhoc task to send the email.
                     $task = new \mod_customcert\task\email_certificate_task();
                     $task->set_custom_data(['issueid' => $issueid, 'customcertid' => $customcert->id]);
@@ -204,5 +215,13 @@ class issue_certificates_task extends \core\task\scheduled_task {
                 }
             }
         }
+    }
+
+    public static function create_event($eventdata) {
+        \mod_customcert\event\issue_certificate_attempted::create(array(
+                'context' => \context_system::instance(),
+                'other' => array('description' => $eventdata)
+            )
+        )->trigger();
     }
 }
