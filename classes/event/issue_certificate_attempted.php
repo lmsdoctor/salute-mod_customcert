@@ -57,7 +57,7 @@ class issue_certificate_attempted extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        return "Issue certificate attempt: {$this->other['description']}";
+        return "{$this->other['description']}";
     }
 
     /**

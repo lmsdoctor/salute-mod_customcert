@@ -167,7 +167,7 @@ class issue_certificates_task extends \core\task\scheduled_task {
                 if (in_array($filtereduser->id, array_keys((array)$issuedusers))) {
                     continue;
                 }
-                $eventstr .= " - User has not been issued and emailed cert " . PHP_EOL;
+                $eventstr .= " - Cert has not been issued and emailed " . PHP_EOL;
 
                 // Don't want to issue to teachers.
                 if (in_array($filtereduser->id, array_keys((array)$userswithmanage))) {
@@ -180,7 +180,7 @@ class issue_certificates_task extends \core\task\scheduled_task {
                 if (!$cm->uservisible) {
                     continue;
                 }
-                $eventstr .= " - Activity is hidden for the student " . PHP_EOL;
+                $eventstr .= " - Activity is visible for the user " . PHP_EOL;
 
                 // Check that they have passed the required time.
                 if (!empty($customcert->requiredtime)) {
